@@ -7,8 +7,8 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        version: [latest, branch@master, branch@dev]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        version: [latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -21,3 +21,8 @@ jobs:
         run: |
           xmake --version
           xmake -y
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: build
+          path: build
