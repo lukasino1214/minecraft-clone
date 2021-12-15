@@ -20,4 +20,4 @@ jobs:
       - name: Run tests
         run: |
           xmake --version
-          xmake
+          xmake -y
