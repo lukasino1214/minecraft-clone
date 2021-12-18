@@ -167,7 +167,7 @@ void Shader::SetInt(const std::string &name, int value) {
     glUniform1i(location, value);
 }
 
-void Shader::SetUInt(const std::string &name, uint value) {
+void Shader::SetUInt(const std::string &name, unsigned int value) {
     GLint location = glGetUniformLocation(m_RendererID, name.c_str());
     glUniform1ui(location, value);
 }

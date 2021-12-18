@@ -19,7 +19,7 @@ public:
     void Unbind() const;
 
     void SetInt(const std::string& name, int value);
-    void SetUInt(const std::string& name, uint value);
+    void SetUInt(const std::string& name, unsigned int value);
     void SetIntArray(const std::string& name, int* values, uint32_t count);
     void SetFloat(const std::string& name, float value);
     void SetFloat2(const std::string& name, const glm::vec2& value);
