@@ -166,7 +166,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Mojang/Microsoft dont sue me!", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -285,6 +285,8 @@ int main()
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
     ourShader.SetMat4("projection", camera.GetProjection());
 
+    bool mode = false;
+
 
     // render loop
     // -----------
@@ -293,6 +295,18 @@ int main()
         // input
         // -----
         processInput(window);
+
+        if (glfwGetKey(window, GLFW_KEY_C) != GLFW_RELEASE) {
+            if(mode) {
+                glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+                mode = false;
+            }
+
+            else {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                mode = true;
+            }
+        }
 
         // render
         // ------
