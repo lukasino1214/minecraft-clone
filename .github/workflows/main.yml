@@ -27,7 +27,7 @@ jobs:
       - if: matrix.os == 'macOS-latest'
         run: |
           cp -R res/ build/macosx/x86_64/release/
-      - if: matrix.os == 'macOS-latest'
+      - if: matrix.os == 'windows-latest'
         run: |
           copy res/ build/windows/x64/release/
       - name: Upload Artifact
