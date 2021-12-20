@@ -1,7 +1,7 @@
 set_allowedarchs("x64")
 set_languages("c99", "c++17")
 
-package("FastNoise2")
+ --[[  package("FastNoise2")
     add_urls("https://github.com/Auburn/FastNoise2.git")
 
     on_install(function (package)
@@ -11,9 +11,9 @@ package("FastNoise2")
         end
         import("package.tools.cmake").install(package, configs)
     end)
-package_end()
-
-packages = {"glfw", "glad", "glm", "spdlog", "yaml-cpp", "entt", "stb", "FastNoise2"}
+package_end() --]]
+-- , "FastNoise2"
+packages = {"glfw", "glad", "glm", "spdlog", "yaml-cpp", "entt", "stb"}
 
 
 add_requires(packages)

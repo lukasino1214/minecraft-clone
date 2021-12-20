@@ -13,7 +13,7 @@
 #include "Client/Graphics/Camera.h"
 #include "Client/Data/Chunk.h"
 #include <glm/gtx/string_cast.hpp>
-#include <FastNoise/FastNoise.h>
+//#include <FastNoise/FastNoise.h>
 
 
 
