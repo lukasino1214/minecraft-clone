@@ -13,7 +13,7 @@ package("FastNoise2")
     end)
 package_end()
 
-packages = {"FastNoise2", "glfw", "glad", "glm", "spdlog", "yaml-cpp", "entt", "stb"}
+packages = {"glfw", "glad", "glm", "spdlog", "yaml-cpp", "entt", "stb"}
 add_requires(packages)
 
 target("deps")
