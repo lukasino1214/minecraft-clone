@@ -30,6 +30,10 @@ public:
         m_Projection = glm::perspective(glm::radians(m_FOV), (float)m_Width / m_Height, nearPlane, farPlane);
     }
 
+    glm::vec3 GetPosition() {
+        return m_Position;
+    }
+
     void Inputs(GLFWwindow* window);
 private:
     int m_Width;
