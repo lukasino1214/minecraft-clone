@@ -21,15 +21,6 @@ jobs:
         run: |
           xmake --version
           xmake -y
-      - if: matrix.os == 'ubuntu-latest'
-        run: |
-          cp -R res/ build/linux/x86_64/release/
-      - if: matrix.os == 'macOS-latest'
-        run: |
-          cp -R res/ build/macosx/x86_64/release/
-      - if: matrix.os == 'windows-latest'
-        run: |
-          copy res/ build/windows/x64/release/
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
