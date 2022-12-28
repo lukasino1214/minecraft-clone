@@ -1,0 +1,15 @@
+{
+    "registries": [
+        {
+            "kind": "git",
+            "repository": "https://github.com/GabeRundlett/vcpkg-registry",
+            "baseline": "2932e4c6b08b431666ce23d2ae5a23f363a723d9",
+            "packages": [
+                "glfw3",
+                "daxa",
+                "dxc",
+                "fsr2"
+            ]
+        }
+    ]
+}
