@@ -24,11 +24,11 @@ struct BlockFace {
     }
 };
 
-static constexpr inline u32 CUBE_VERTS = 36;
-static constexpr inline u32 CUBE_VERTS_SIZE = CUBE_VERTS * sizeof(DrawVertex);
+static constexpr inline u32 CUBE_VERTS = 6;
+static constexpr inline u32 CUBE_VERTS_SIZE = CUBE_VERTS * sizeof(BlockFace);
 static constexpr inline u32 CHUNK_SIZE = 16;
 static constexpr inline u32 CHUNK_VERTS = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * CUBE_VERTS;
-static constexpr inline u32 CHUNK_VERTS_SIZE = CHUNK_VERTS * sizeof(DrawVertex);
+static constexpr inline u32 CHUNK_VERTS_SIZE = CHUNK_VERTS * sizeof(BlockFace);
 
 struct Chunk {
     Chunk(daxa::Device& device, FastNoise::SmartNode<> generator, const glm::ivec3 pos) : device{device}, pos{pos} {
@@ -49,113 +49,6 @@ struct Chunk {
             }
         }
 
-        std::vector<DrawVertex> vertices = {};
-        vertices.reserve(CHUNK_VERTS);
-
-        for(u32 x = 0; x < CHUNK_SIZE; x++) {
-            for(u32 y = 0; y < CHUNK_SIZE; y++) {
-                for(u32 z = 0; z < CHUNK_SIZE; z++) {
-                    if(voxel_data[x][y][z] != BlockType::Solid) { continue; }
-                    f32 f_x = static_cast<f32>(x);
-                    f32 f_y = static_cast<f32>(y);
-                    f32 f_z = static_cast<f32>(z);
-
-                    f32 r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-                    f32 g = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-                    f32 b = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-
-                    f32vec3 col = {r, g, b};
-                    glm::ivec3 voxel_pos = { x, y, z };
-
-                    std::vector<DrawVertex> block_verts = {};
-
-                    if(get_voxel(voxel_pos + glm::ivec3{ 0, 0, -1 }) == BlockType::Air) {
-                        std::vector<DrawVertex> face = {
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 0.0f }},
-                            DrawVertex {{ 0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 1.0f }},
-                            DrawVertex {{-0.5f + f_x,  0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 0.0f }},
-                        };
-
-                        block_verts.insert(block_verts.end(), face.begin(), face.end());
-                    }
-
-                    if(get_voxel(voxel_pos + glm::ivec3{ 0, 0, +1 }) == BlockType::Air) {
-                        std::vector<DrawVertex> face = {
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 0.0f }},
-                            DrawVertex {{ 0.5f + f_x, -0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 1.0f }},
-                            DrawVertex {{-0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 0.0f }},
-                        };
-                        
-                        block_verts.insert(block_verts.end(), face.begin(), face.end());
-                    }
-
-                    if(get_voxel(voxel_pos + glm::ivec3{ -1, 0, 0 }) == BlockType::Air) {
-                        std::vector<DrawVertex> face = {
-                            DrawVertex {{-0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                            DrawVertex {{-0.5f + f_x,  0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 1.0f }},
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 0.0f }},
-                            DrawVertex {{-0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                        };
-
-                        block_verts.insert(block_verts.end(), face.begin(), face.end());
-                    }
-
-                    if(get_voxel(voxel_pos + glm::ivec3{ +1, 0, 0 }) == BlockType::Air) {
-                        std::vector<DrawVertex> face = {
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x, -0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 0.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                        };
-
-                        block_verts.insert(block_verts.end(), face.begin(), face.end());
-                    }
-
-                    if(get_voxel(voxel_pos + glm::ivec3{ 0, -1, 0 }) == BlockType::Air) {
-                        std::vector<DrawVertex> face = {
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x, -0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                            DrawVertex {{ 0.5f + f_x, -0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 0.0f }},
-                            DrawVertex {{-0.5f + f_x, -0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                        };
-
-                        block_verts.insert(block_verts.end(), face.begin(), face.end());
-                    }
-
-                    if(get_voxel(voxel_pos + glm::ivec3{ 0, +1, 0 }) == BlockType::Air) {
-                        std::vector<DrawVertex> face = {
-                            DrawVertex {{-0.5f + f_x,  0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 1.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                            DrawVertex {{ 0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 1.0f, 0.0f }},
-                            DrawVertex {{-0.5f + f_x,  0.5f + f_y,  0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 0.0f }},
-                            DrawVertex {{-0.5f + f_x,  0.5f + f_y, -0.5f + f_z},      { col.x, col.y, col.z },        { 0.0f, 1.0f }},
-                        };
-
-                        block_verts.insert(block_verts.end(), face.begin(), face.end());
-                    }
-
-                    vertices.insert(vertices.end(), block_verts.begin(), block_verts.end());
-                }
-            }
-        }
-
-        std::cout << vertices.size() << std::endl;
-        chunk_size = vertices.size();
-        renderable = chunk_size != 0 ? true : false;
-
         this->face_buffer = device.create_buffer({
             .memory_flags = daxa::MemoryFlagBits::DEDICATED_MEMORY,
             .size = CHUNK_VERTS_SIZE
@@ -167,9 +60,47 @@ struct Chunk {
             .size = CHUNK_VERTS_SIZE
         });
 
-        auto * buffer_ptr = device.get_host_address_as<DrawVertex>(staging_buffer);
+        auto * buffer_ptr = device.get_host_address_as<BlockFace>(staging_buffer);
 
-        std::memcpy(buffer_ptr, vertices.data(), CHUNK_VERTS_SIZE);
+        u32 texture_id = 0;
+
+        for(u32 x = 0; x < CHUNK_SIZE; x++) {
+            for(u32 y = 0; y < CHUNK_SIZE; y++) {
+                for(u32 z = 0; z < CHUNK_SIZE; z++) {
+                    if(voxel_data[x][y][z] != BlockType::Solid) { continue; }
+
+                    glm::ivec3 voxel_pos = { x, y, z };
+
+
+                    if(get_voxel(voxel_pos + glm::ivec3{ 0, 0, -1 }) == BlockType::Air) {
+                        *buffer_ptr = BlockFace(voxel_pos, 5, texture_id), buffer_ptr++, chunk_size++;
+                    }
+
+                    if(get_voxel(voxel_pos + glm::ivec3{ 0, 0, +1 }) == BlockType::Air) {
+                        *buffer_ptr = BlockFace(voxel_pos, 4, texture_id), buffer_ptr++, chunk_size++;
+                    }
+
+                    if(get_voxel(voxel_pos + glm::ivec3{ -1, 0, 0 }) == BlockType::Air) {
+                        *buffer_ptr = BlockFace(voxel_pos, 1, texture_id), buffer_ptr++, chunk_size++;
+                    }
+
+                    if(get_voxel(voxel_pos + glm::ivec3{ +1, 0, 0 }) == BlockType::Air) {
+                        *buffer_ptr = BlockFace(voxel_pos, 0, texture_id), buffer_ptr++, chunk_size++;
+                    }
+
+                    if(get_voxel(voxel_pos + glm::ivec3{ 0, -1, 0 }) == BlockType::Air) {
+                        *buffer_ptr = BlockFace(voxel_pos, 3, texture_id), buffer_ptr++, chunk_size++;
+                    }
+
+                    if(get_voxel(voxel_pos + glm::ivec3{ 0, +1, 0 }) == BlockType::Air) {
+                        *buffer_ptr = BlockFace(voxel_pos, 2, texture_id), buffer_ptr++, chunk_size++;
+                    }
+                }
+            }
+        }
+
+        std::cout << chunk_size << std::endl;
+        renderable = chunk_size != 0 ? true : false;
 
         daxa::CommandList command_list = device.create_command_list({.debug_name = "my command list"});
 
@@ -195,7 +126,7 @@ struct Chunk {
             push.chunk_pos = { static_cast<f32>(pos.x * 16), static_cast<f32>(pos.y * 16), static_cast<f32>(pos.z * 16) };
             push.face_buffer = device.get_device_address(face_buffer);
             cmd_list.push_constant(push);
-            cmd_list.draw({.vertex_count = chunk_size});
+            cmd_list.draw({.vertex_count = chunk_size * 6});
         }
     }
 
@@ -219,6 +150,6 @@ struct Chunk {
     daxa::Device& device;
     glm::ivec3 pos;
     bool renderable = false;
-    u32 chunk_size;
+    u32 chunk_size = 0;
     std::array<std::array<std::array<BlockType, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> voxel_data;
 };

@@ -302,9 +302,9 @@ struct App : AppWindow<App> {
         add->SetLHS(DomainScale);
         add->SetRHS(PosationOutput);
 
-        static constexpr i32 world_size_x = 1;
+        static constexpr i32 world_size_x = 4;
         static constexpr i32 world_size_y = 1;
-        static constexpr i32 world_size_z = 1;
+        static constexpr i32 world_size_z = 4;
 
         u32 chunk_amount = 0;
     
