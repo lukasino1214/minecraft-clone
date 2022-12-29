@@ -12,6 +12,25 @@
 #define BlockFace_Cross_A 6
 #define BlockFace_Cross_B 7
 
+#define BlockID_Air 0
+#define BlockID_Grass 1
+#define BlockID_Dirt 2
+#define BlockID_Stone 3
+#define BlockID_Cobblestone 4
+#define BlockID_Gravel 5
+#define BlockID_Sand 6
+#define BlockID_Water 7
+
+#define TextureID_Air 0
+#define TextureID_Grass_Top 1
+#define TextureID_Grass_Side 2
+#define TextureID_Dirt 3
+#define TextureID_Stone 4
+#define TextureID_Cobblestone 5
+#define TextureID_Gravel 6
+#define TextureID_Sand 7
+#define TextureID_Water 8
+
 struct UnpackedFace {
     f32vec3 block_position;
     f32vec3 position;

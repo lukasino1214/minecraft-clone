@@ -11,6 +11,8 @@ find_package(daxa CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 
+set(CMAKE_CXX_FLAGS "-O2")
+
 find_path(STB_INCLUDE_DIRS "stb_image.h" REQUIRED)
 add_library(stb_interface INTERFACE)
 target_include_directories(stb_interface INTERFACE ${STB_INCLUDE_DIRS})

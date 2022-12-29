@@ -5,7 +5,9 @@
 #include <cmath>
 #include <daxa/utils/pipeline_manager.hpp>
 #define GLM_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtx/hash.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <FastNoise/FastNoise.h>
 
@@ -110,7 +112,7 @@ struct App : AppWindow<App> {
     bool paused = true;
 
     std::unique_ptr<Textures> textures = std::make_unique<Textures>(device);
-    std::vector<std::unique_ptr<Chunk>> chunks;
+    std::unordered_map<glm::ivec3, std::unique_ptr<Chunk>> chunks;
 
     App() : AppWindow<App>("Minecraft Clone To Bully Shit Out Of Meerkat 😈") {}
     ~App() {
@@ -192,7 +194,7 @@ struct App : AppWindow<App> {
         push.atlas_texture = textures->atlas_texture_array.default_view();
         push.atlas_sampler = textures->atlas_sampler;
 
-        for(auto& chunk : chunks) {
+        for(auto& [pos, chunk] : chunks) {
             chunk->draw(command_list, push);
         }
 
@@ -302,23 +304,51 @@ struct App : AppWindow<App> {
         add->SetLHS(DomainScale);
         add->SetRHS(PosationOutput);
 
-        static constexpr i32 world_size_x = 4;
+        static constexpr i32 world_size_x = 16;
         static constexpr i32 world_size_y = 1;
-        static constexpr i32 world_size_z = 4;
+        static constexpr i32 world_size_z = 16;
 
         u32 chunk_amount = 0;
     
+        for(i32 y = world_size_y; y >= -world_size_y; y--) {
+            for(i32 x = -world_size_x; x <= world_size_x; x++) {
+                for(i32 z = -world_size_z; z <= world_size_z; z++) {
+                    chunk_amount++;
+                    std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(device, glm::ivec3{x, y, z});
+                    Chunk* upper_chunk = chunks.find(glm::ivec3{x, y, z} + glm::ivec3{ 0, +1, 0 }) != chunks.end() ? chunks.at(glm::ivec3{x, y, z} + glm::ivec3{ 0, +1, 0 }).get() : nullptr;
+                    chunk->generate_terrain(add, upper_chunk);
+                    this->chunks.insert(std::make_pair(glm::ivec3{x, y, z}, std::move(chunk)));
+                }
+            }
+        }
+
+        u32 vertices = 0;
+
         for(i32 x = -world_size_x; x <= world_size_x; x++) {
             for(i32 y = -world_size_y; y <= world_size_y; y++) {
                 for(i32 z = -world_size_z; z <= world_size_z; z++) {
-                    chunk_amount++;
-                    std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(device, add, glm::ivec3{x, y, z});
-                    this->chunks.push_back(std::move(chunk));
+                    glm::ivec3 chunk_pos = {x, y, z};
+                    if(chunks.find(chunk_pos) != chunks.end()) {
+                        auto& chunk = chunks.at(chunk_pos);
+
+                        Chunk::ChunkNeighbours neighbours {
+                            .nx = chunks.find(chunk_pos + glm::ivec3{ -1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ -1, 0, 0 }).get() : nullptr,
+                            .px = chunks.find(chunk_pos + glm::ivec3{ +1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ +1, 0, 0 }).get() : nullptr,
+                            .ny = chunks.find(chunk_pos + glm::ivec3{ 0, -1, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, -1, 0 }).get() : nullptr,
+                            .py = chunks.find(chunk_pos + glm::ivec3{ 0, +1, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, +1, 0 }).get() : nullptr,
+                            .nz = chunks.find(chunk_pos + glm::ivec3{ 0, 0, -1 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, 0, -1 }).get() : nullptr,
+                            .pz = chunks.find(chunk_pos + glm::ivec3{ 0, 0, +1 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, 0, +1 }).get() : nullptr,
+                        };
+
+                        chunk->generate_mesh(neighbours);
+                        vertices += chunk->chunk_size;
+                    }
                 }
             }
         }
 
         std::cout << "amount of chunks: " << chunk_amount << std::endl;
+        std::cout << "amount of vertices: " << vertices << std::endl;
         std::cout << "done!" << std::endl;
 
         camera.camera.resize(size_x, size_y);

@@ -7,10 +7,15 @@ using namespace daxa::types;
 #include <stb_image.h>
 
 static const std::vector<std::string> texture_names = {
-    "grass-top.png",
-    "grass-side.png",
-    "dirt.png",
-    "stone.png",
+    "air",
+    "grass-top",
+    "grass-side",
+    "dirt",
+    "stone",
+    "cobblestone",
+    "gravel",
+    "sand",
+    "water"
 };
 
 struct Textures {
@@ -55,7 +60,7 @@ struct Textures {
 
         for(u32 i = 0; i < texture_names.size(); i++) {
             stbi_set_flip_vertically_on_load(1);
-            std::string path = "textures/" + texture_names[i];
+            std::string path = "textures/" + texture_names[i] + ".png";
 
             i32 size_x = 0;
             i32 size_y = 0;

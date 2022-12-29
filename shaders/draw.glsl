@@ -34,17 +34,36 @@ void correct_pos(inout UnpackedFace face, u32 face_id) {
 
 void correct_uv(inout UnpackedFace face, u32 face_id) {
     switch (face.block_face) {
-        case BlockFace_Left: face.uv = f32vec2(1.0, 1.0) + f32vec2(-face.uv.y, -face.uv.x); break;
-        case BlockFace_Right: face.uv = f32vec2(0.0, 0.0) + f32vec2(+face.uv.y, +face.uv.x); break;
-        case BlockFace_Bottom: face.uv = f32vec2(0.0, 0.0) + f32vec2(+face.uv.x, +face.uv.y); break;
-        case BlockFace_Top: face.uv = f32vec2(0.0, 0.0) + f32vec2(+face.uv.x, +face.uv.y); break;
-        case BlockFace_Back: face.uv = f32vec2(1.0, 1.0) + f32vec2(-face.uv.x, -face.uv.y); break;
-        case BlockFace_Front: face.uv = f32vec2(1.0, 1.0) + f32vec2(-face.uv.x, -face.uv.y); break;
+        case BlockFace_Left: face.uv = f32vec2(1.0, 0.0) + f32vec2(-face.uv.y, +face.uv.x); break;
+        case BlockFace_Right: face.uv = f32vec2(0.0, 1.0) + f32vec2(+face.uv.y, -face.uv.x); break;
+        case BlockFace_Bottom: face.uv = f32vec2(0.0, 1.0) + f32vec2(+face.uv.x, -face.uv.y); break;
+        case BlockFace_Top: face.uv = f32vec2(0.0, 1.0) + f32vec2(+face.uv.x, -face.uv.y); break;
+        case BlockFace_Back: face.uv = f32vec2(1.0, 0.0) + f32vec2(-face.uv.x, +face.uv.y); break;
+        case BlockFace_Front: face.uv = f32vec2(1.0, 0.0) + f32vec2(-face.uv.x, +face.uv.y); break;
     }
 }
 
 u32 tile_texture_index(u32 block_id, u32 face) {
-    return 0;
+    switch(block_id) {
+        case BlockID_Air: return TextureID_Air;
+        case BlockID_Grass: 
+            switch(face) {
+                case BlockFace_Back:
+                case BlockFace_Front:
+                case BlockFace_Left:
+                case BlockFace_Right: return TextureID_Grass_Side;
+                case BlockFace_Bottom: return TextureID_Grass_Top;
+                case BlockFace_Top: return TextureID_Dirt;
+                default: return 0;
+            }
+        case BlockID_Dirt: return TextureID_Dirt;
+        case BlockID_Stone: return TextureID_Stone;
+        case BlockID_Cobblestone: return TextureID_Cobblestone;
+        case BlockID_Gravel: return TextureID_Gravel;
+        case BlockID_Sand: return TextureID_Sand;
+        case BlockID_Water: return TextureID_Water;
+        default: return 0;
+    }
 }
 
 UnpackedFace get_vertex(u32 vert_i) {
