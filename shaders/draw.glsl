@@ -71,11 +71,11 @@ UnpackedFace get_vertex(u32 vert_i) {
     u32 data_instance = vert_i - data_index * 6;
     u32 data = deref(daxa_push_constant.face_buffer).data[data_index];
     UnpackedFace result;
-    result.block_position = f32vec3((data >> 0) & 0xf, (data >> 4) & 0xf, (data >> 8) & 0xf);
+    result.block_position = f32vec3((data >> 0) & 0x1f, (data >> 5) & 0x1f, (data >> 10) & 0x1f);
     result.position = result.block_position;
     result.uv = instance_offsets[data_instance];
-    result.block_id = (data >> 15) & 0xff;
-    result.block_face = (data >> 12) & 0x7;
+    result.block_id = (data >> 18) & 0x3fff;
+    result.block_face = (data >> 15) & 0x7;
     result.vertex_id = data_instance;
     correct_pos(result, data_index);
     result.texture_id = tile_texture_index(result.block_id, result.block_face);

@@ -20,6 +20,8 @@
 #define BlockID_Gravel 5
 #define BlockID_Sand 6
 #define BlockID_Water 7
+#define BlockID_Tallgrass 8
+#define BlockID_Rose 9
 
 #define TextureID_Air 0
 #define TextureID_Grass_Top 1
@@ -30,6 +32,8 @@
 #define TextureID_Gravel 6
 #define TextureID_Sand 7
 #define TextureID_Water 8
+#define TextureID_Tallgrass 9
+#define TextureID_Rose 10
 
 struct UnpackedFace {
     f32vec3 block_position;
@@ -43,7 +47,7 @@ struct UnpackedFace {
 };
 
 struct DrawVertexBuffer {
-    daxa_u32 data[16 * 16 * 16 * 6];
+    daxa_u32 data[32 * 32 * 32 * 6];
 };
 DAXA_ENABLE_BUFFER_PTR(DrawVertexBuffer)
 

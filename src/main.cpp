@@ -224,7 +224,162 @@ struct App : AppWindow<App> {
         });
     }
 
-    void on_mouse_button(i32, i32) {}
+    auto to_chunk_position(const glm::ivec3& position) -> glm::ivec3 {
+        return glm::ivec3{
+            position.x <= 0 ? -position.x / CHUNK_SIZE : -position.x / CHUNK_SIZE - 1,
+            position.y <= 0 ? -position.y / CHUNK_SIZE : -position.y / CHUNK_SIZE - 1, 
+            position.z <= 0 ? -position.z / CHUNK_SIZE : -position.z / CHUNK_SIZE - 1
+        };
+    }
+
+    auto to_chunk_position(const glm::vec3& position) -> glm::ivec3 {
+        i32 x = static_cast<i32>(position.x);        
+        i32 y = static_cast<i32>(position.y);
+        i32 z = static_cast<i32>(position.z);        
+
+        return to_chunk_position(glm::ivec3{x, y, z});
+    }
+
+    auto to_local_voxel_postion(const glm::vec3& position) -> glm::ivec3 {
+        i32 x = static_cast<i32>(position.x);        
+        i32 y = static_cast<i32>(position.y);
+        i32 z = static_cast<i32>(position.z);        
+
+        return to_local_voxel_postion(glm::ivec3{x, y, z});
+    }
+
+    auto to_local_voxel_postion(const glm::ivec3& position) -> glm::ivec3 {
+        return glm::abs(glm::ivec3{ 
+            position.x <= 0 ? position.x % CHUNK_SIZE : (CHUNK_SIZE - 1) - position.x % CHUNK_SIZE, 
+            position.y <= 0 ? position.y % CHUNK_SIZE : (CHUNK_SIZE - 1) - position.y % CHUNK_SIZE, 
+            position.z <= 0 ? position.z % CHUNK_SIZE : (CHUNK_SIZE - 1) - position.z % CHUNK_SIZE 
+        });
+    }
+
+    void print_pos(const std::string& str, const glm::ivec3& pos) {
+        std::cout << str << " x: " << pos.x << " y: " << pos.y << " z: " << pos.z << std::endl;
+    }
+
+    void print_pos(const std::string& str, const glm::vec3& pos) {
+        std::cout << str << " x: " << pos.x << " y: " << pos.y << " z: " << pos.z << std::endl;
+    }
+
+    // position, rotation, range
+    auto raycast_voxels(const glm::vec3& start_point, const glm::vec3& direction, f32 range) -> std::vector<glm::ivec3> {
+        glm::vec3 normalized_direction = glm::normalize(direction);
+        glm::vec3 end_point = start_point + direction * range;
+        print_pos("end_point", end_point);
+        glm::ivec3 start_voxel = glm::ivec3{
+            static_cast<i32>(start_point.x), 
+            static_cast<i32>(start_point.y), 
+            static_cast<i32>(start_point.z)
+        };
+
+        i32 stepX = (normalized_direction.x > 0) ? 1 : ((normalized_direction.x < 0) ? -1 : 0);
+        i32 stepY = (normalized_direction.y > 0) ? 1 : ((normalized_direction.y < 0) ? -1 : 0);
+        i32 stepZ = (normalized_direction.z > 0) ? 1 : ((normalized_direction.z < 0) ? -1 : 0);
+
+        float tDeltaX = (stepX != 0) ? fmin(stepX / (end_point.x - start_point.x), FLT_MAX) : FLT_MAX;
+        float tDeltaY = (stepY != 0) ? fmin(stepY / (end_point.y - start_point.y), FLT_MAX) : FLT_MAX;
+        float tDeltaZ = (stepZ != 0) ? fmin(stepZ / (end_point.z - start_point.z), FLT_MAX) : FLT_MAX;
+
+        float tMaxX = (stepX > 0.0f) ? tDeltaX * (1.0f - start_point.x + start_voxel.x) : tDeltaX * (start_point.x - start_voxel.x);
+        float tMaxY = (stepY > 0.0f) ? tDeltaY * (1.0f - start_point.y + start_voxel.y) : tDeltaY * (start_point.y - start_voxel.y);
+        float tMaxZ = (stepZ > 0.0f) ? tDeltaZ * (1.0f - start_point.z + start_voxel.z) : tDeltaZ * (start_point.z - start_voxel.z);
+        
+        glm::ivec3 currentVoxel = start_voxel;
+        std::vector<glm::ivec3> intersected;
+        intersected.push_back(start_voxel);
+
+        // sanity check to prevent leak
+        while (intersected.size() < range * 6) {
+            if (tMaxX < tMaxY) {
+                if (tMaxX < tMaxZ) {
+                    currentVoxel.x += stepX;
+                    tMaxX += tDeltaX;
+                }
+                else {
+                    currentVoxel.z += stepZ;
+                    tMaxZ += tDeltaZ;
+                }
+            }
+            else {
+                if (tMaxY < tMaxZ) {
+                    currentVoxel.y += stepY;
+                    tMaxY += tDeltaY;
+                }
+                else {
+                    currentVoxel.z += stepZ;
+                    tMaxZ += tDeltaZ;
+                }
+            }
+            if (tMaxX > 1 && tMaxY > 1 && tMaxZ > 1)
+                break;
+            intersected.push_back(currentVoxel);
+        }
+        return intersected;
+    }
+
+    void on_mouse_button(i32 key, i32 action) {
+        glm::vec3 camera_pos = camera.pos;
+        glm::ivec3 chunk_pos = to_chunk_position(camera_pos);
+        glm::ivec3 block_pos = to_local_voxel_postion(camera_pos);
+
+        //if(!paused) {
+            if(key == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+                print_pos("start point: ", camera_pos);
+                std::vector<glm::ivec3> voxels = raycast_voxels(camera_pos, camera.camera.forward_vector(), 8.0f);
+                for(auto& pos : voxels) {
+                    print_pos("voxel: ", pos);
+                    chunk_pos = to_chunk_position(pos);
+                    block_pos = to_local_voxel_postion(pos);
+
+                    if(chunks.find(chunk_pos) != chunks.end()) {
+                        auto& chunk = chunks.at(chunk_pos);
+
+                        if(chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z] != BlockID::Air) {
+                            chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z] = BlockID::Air;
+
+                            Chunk::ChunkNeighbours neighbours {
+                                .nx = chunks.find(chunk_pos + glm::ivec3{ -1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ -1, 0, 0 }).get() : nullptr,
+                                .px = chunks.find(chunk_pos + glm::ivec3{ +1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ +1, 0, 0 }).get() : nullptr,
+                                .ny = chunks.find(chunk_pos + glm::ivec3{ 0, -1, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, -1, 0 }).get() : nullptr,
+                                .py = chunks.find(chunk_pos + glm::ivec3{ 0, +1, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, +1, 0 }).get() : nullptr,
+                                .nz = chunks.find(chunk_pos + glm::ivec3{ 0, 0, -1 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, 0, -1 }).get() : nullptr,
+                                .pz = chunks.find(chunk_pos + glm::ivec3{ 0, 0, +1 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, 0, +1 }).get() : nullptr,
+                            };
+
+                            chunk->generate_mesh(neighbours);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if(key == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+                print_pos("start point: ", camera_pos);
+
+                if(chunks.find(chunk_pos) != chunks.end()) {
+                    auto& chunk = chunks.at(chunk_pos);
+                    std::cout << "place block" << std::endl;
+
+                    chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z] = BlockID::Sand;
+
+                    Chunk::ChunkNeighbours neighbours {
+                        .nx = chunks.find(chunk_pos + glm::ivec3{ -1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ -1, 0, 0 }).get() : nullptr,
+                        .px = chunks.find(chunk_pos + glm::ivec3{ +1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ +1, 0, 0 }).get() : nullptr,
+                        .ny = chunks.find(chunk_pos + glm::ivec3{ 0, -1, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, -1, 0 }).get() : nullptr,
+                        .py = chunks.find(chunk_pos + glm::ivec3{ 0, +1, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, +1, 0 }).get() : nullptr,
+                        .nz = chunks.find(chunk_pos + glm::ivec3{ 0, 0, -1 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, 0, -1 }).get() : nullptr,
+                        .pz = chunks.find(chunk_pos + glm::ivec3{ 0, 0, +1 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, 0, +1 }).get() : nullptr,
+                    };
+
+                    chunk->generate_mesh(neighbours);
+                }
+            }
+        //}
+    }
+
     void on_mouse_move(f32 x, f32 y) {
         if (!paused) {
             f32 center_x = static_cast<f32>(size_x / 2);
@@ -294,19 +449,19 @@ struct App : AppWindow<App> {
         FractalFBm->SetSource(OpenSimplex);
         FractalFBm->SetGain(0.280f);
         FractalFBm->SetOctaveCount(4);
-        FractalFBm->SetLacunarity(2.0f);
+        FractalFBm->SetLacunarity(4.0f);
         auto DomainScale = FastNoise::New<FastNoise::DomainScale>();
         DomainScale->SetSource(FractalFBm);
-        DomainScale->SetScale(0.76f);
+        DomainScale->SetScale(0.86f);
         auto PosationOutput = FastNoise::New<FastNoise::PositionOutput>();
-        PosationOutput->Set<FastNoise::Dim::Y>(3.72f);
+        PosationOutput->Set<FastNoise::Dim::Y>(6.72f);
         auto add = FastNoise::New<FastNoise::Add>();
         add->SetLHS(DomainScale);
         add->SetRHS(PosationOutput);
 
-        static constexpr i32 world_size_x = 16;
+        static constexpr i32 world_size_x = 1;
         static constexpr i32 world_size_y = 1;
-        static constexpr i32 world_size_z = 16;
+        static constexpr i32 world_size_z = 1;
 
         u32 chunk_amount = 0;
     
@@ -350,6 +505,34 @@ struct App : AppWindow<App> {
         std::cout << "amount of chunks: " << chunk_amount << std::endl;
         std::cout << "amount of vertices: " << vertices << std::endl;
         std::cout << "done!" << std::endl;
+
+        /*for(i32 y = world_size_y; y >= -world_size_y; y--) {
+            std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(device, glm::ivec3{0, y, 0});
+            Chunk* upper_chunk = chunks.find(glm::ivec3{0, y, 0} + glm::ivec3{ 0, +1, 0 }) != chunks.end() ? chunks.at(glm::ivec3{0, y, 0} + glm::ivec3{ 0, +1, 0 }).get() : nullptr;
+            chunk->generate_terrain(add, upper_chunk);
+            this->chunks.insert(std::make_pair(glm::ivec3{0, y, 0}, std::move(chunk)));
+        }
+
+        u32 vertices = 0;
+
+        for(i32 y = -world_size_y; y <= world_size_y; y++) {
+            glm::ivec3 chunk_pos = {0, y, 0};
+            if(chunks.find(chunk_pos) != chunks.end()) {
+                auto& chunk = chunks.at(chunk_pos);
+
+                Chunk::ChunkNeighbours neighbours {
+                    .nx = chunks.find(chunk_pos + glm::ivec3{ -1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ -1, 0, 0 }).get() : nullptr,
+                    .px = chunks.find(chunk_pos + glm::ivec3{ +1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ +1, 0, 0 }).get() : nullptr,
+                    .ny = chunks.find(chunk_pos + glm::ivec3{ 0, -1, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, -1, 0 }).get() : nullptr,
+                    .py = chunks.find(chunk_pos + glm::ivec3{ 0, +1, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, +1, 0 }).get() : nullptr,
+                    .nz = chunks.find(chunk_pos + glm::ivec3{ 0, 0, -1 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, 0, -1 }).get() : nullptr,
+                    .pz = chunks.find(chunk_pos + glm::ivec3{ 0, 0, +1 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ 0, 0, +1 }).get() : nullptr,
+                };
+
+                chunk->generate_mesh(neighbours);
+                vertices += chunk->chunk_size;
+            }
+        }*/
 
         camera.camera.resize(size_x, size_y);
     }

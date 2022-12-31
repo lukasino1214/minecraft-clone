@@ -40,6 +40,12 @@ struct Camera3D {
     glm::mat4 get_view() {
         return vrot_mat * vtrn_mat;
     }
+
+    auto forward_vector() -> glm::vec3 {
+        const glm::mat4 inverted = glm::inverse(get_view());
+        glm::vec3 forward = normalize(glm::vec3(inverted[2]));
+        return forward;
+    }
 };
 
 namespace input {

@@ -1,4 +1,5 @@
 #include "camera.hpp"
+#include <iostream>
 
 void ControlledCamera3D::update(f32 dt) {
     auto delta_pos = speed * dt;

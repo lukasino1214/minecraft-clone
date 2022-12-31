@@ -15,7 +15,9 @@ static const std::vector<std::string> texture_names = {
     "cobblestone",
     "gravel",
     "sand",
-    "water"
+    "water",
+    "tallgrass",
+    "rose"
 };
 
 struct Textures {

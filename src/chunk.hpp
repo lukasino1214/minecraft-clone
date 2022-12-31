@@ -15,24 +15,47 @@ enum struct BlockID : u32 {
     Cobblestone,
     Gravel,
     Sand,
-    Water
+    Water,
+    TallGrass,
+    Rose
+};
+
+struct Block {
+    BlockID id = BlockID::Air;
+
+    auto is_occluding() const -> bool {
+        switch (this->id) {
+            case BlockID::Air:
+            case BlockID::Rose:
+            case BlockID::TallGrass:
+            case BlockID::Water: return false;
+            default: return true;
+        }
+    }
+    auto is_cross() const -> bool {
+        switch (this->id) {
+            case BlockID::Rose:
+            case BlockID::TallGrass: return true;
+            default: return false;
+        }
+    }
 };
 
 struct BlockFace {
     u32 data = 0;
 
     BlockFace(const glm::ivec3& pos, u32 side, u32 block_id) {
-        data |= (static_cast<u32>(pos.x) & 0xf) << 0;
-        data |= (static_cast<u32>(pos.y) & 0xf) << 4;
-        data |= (static_cast<u32>(pos.z) & 0xf) << 8;
-        data |= (side & 0x7) << 12;
-        data |= (block_id & 0xff) << 15;
+        data |= (static_cast<u32>(pos.x) & 0x1f) << 0;
+        data |= (static_cast<u32>(pos.y) & 0x1f) << 5;
+        data |= (static_cast<u32>(pos.z) & 0x1f) << 10;
+        data |= (side & 0x7) << 15;
+        data |= (static_cast<u32>(block_id) & 0x3fff) << 18;
     }
 };
 
 #define CUBE_VERTS 6
 #define CUBE_VERTS_SIZE CUBE_VERTS * sizeof(BlockFace)
-#define CHUNK_SIZE 16
+#define CHUNK_SIZE 32
 #define CHUNK_VERTS CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * CUBE_VERTS
 #define CHUNK_VERTS_SIZE CHUNK_VERTS * sizeof(BlockFace)
 
@@ -51,6 +74,14 @@ struct Chunk {
             .memory_flags = daxa::MemoryFlagBits::DEDICATED_MEMORY,
             .size = CHUNK_VERTS_SIZE
         });
+
+        for(u32 x = 0; x < CHUNK_SIZE; x++) {
+            for(u32 y = 0; y < CHUNK_SIZE; y++) {
+                for(u32 z = 0; z < CHUNK_SIZE; z++) {
+                    voxel_data[x][y][z] = BlockID::Air;
+                }
+            }
+        }
     }
     ~Chunk() {
         device.destroy_buffer(face_buffer);
@@ -74,23 +105,46 @@ struct Chunk {
             }
         }
 
-
         for(u32 x = 0; x < CHUNK_SIZE; x++) {
             for(u32 z = 0; z < CHUNK_SIZE; z++) {
                 for(i32 y = CHUNK_SIZE-1; y >= 0; y--) {
-                    glm::ivec3 world_pos = {CHUNK_SIZE * pos.z + x, CHUNK_SIZE * pos.y + y, CHUNK_SIZE * pos.x + z};
-                    if(get_voxel(glm::ivec3{x, y, z}, { .py = upper_chunk }) == BlockID::Air) { continue; }
-                    if(get_voxel(glm::ivec3{x, y+1, z}, { .py = upper_chunk }) == BlockID::Air) {
-                        voxel_data[x][y][z] = BlockID::Grass;
-                    }
-                    if(get_voxel(glm::ivec3{x, y+1, z}, { .py = upper_chunk }) == BlockID::Grass) {
-                        voxel_data[x][y][z] = BlockID::Dirt;
-                    }
-                    if(get_voxel(glm::ivec3{x, y+2, z}, { .py = upper_chunk }) == BlockID::Grass) {
-                        voxel_data[x][y][z] = BlockID::Dirt;
-                    }
-                    if(get_voxel(glm::ivec3{x, y+3, z}, { .py = upper_chunk }) == BlockID::Grass) {
-                        voxel_data[x][y][z] = BlockID::Dirt;
+                    if (get_voxel(glm::ivec3{x, y, z}, { .py = upper_chunk }) == BlockID::Stone) {
+                        u32 above_i;
+                        for (above_i = 0; above_i < 6; ++above_i) {
+                            if (get_voxel(glm::ivec3{x, y + above_i + 1, z}, { .py = upper_chunk }) == BlockID::Air)
+                                break;
+                        }
+                        switch (rand() % 8)
+                        {
+                        case 0: voxel_data[x][y][z] = BlockID::Gravel; break;
+                        case 1: voxel_data[x][y][z] = BlockID::Cobblestone; break;
+                        default: break;
+                        }
+                        if (above_i == 0)
+                            voxel_data[x][y][z] = BlockID::Grass;
+                        else if (above_i < 4)
+                            voxel_data[x][y][z] = BlockID::Dirt;
+                    } else if (get_voxel(glm::ivec3{x, y, z}, { .py = upper_chunk }) == BlockID::Air) {
+                        u32 below_i;
+                        for (below_i = 0; below_i < 6; ++below_i)
+                        {
+                            if (get_voxel(glm::ivec3{x, y - (below_i + 1), z}, { .py = upper_chunk }) == BlockID::Stone)
+                                break;
+                        }
+                        if (below_i == 0)
+                        {
+                            i32 r = rand() % 100;
+                            if (r < 50)
+                            {
+                                switch (r)
+                                {
+                                case 0: voxel_data[x][y][z] = BlockID::Rose; break;
+                                default:
+                                    voxel_data[x][y][z] = BlockID::TallGrass;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -98,6 +152,8 @@ struct Chunk {
     }
 
     void generate_mesh(const ChunkNeighbours& neighbors) {
+        chunk_size = 0;
+        renderable = false;
         daxa::BufferId staging_buffer = device.create_buffer({
             .memory_flags = daxa::MemoryFlagBits::HOST_ACCESS_RANDOM,
             .size = CHUNK_VERTS_SIZE
