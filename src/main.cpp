@@ -82,7 +82,7 @@ struct App : AppWindow<App> {
     std::shared_ptr<daxa::RasterPipeline> raster_pipeline = pipeline_manager.add_raster_pipeline({
         .vertex_shader_info = {.source = daxa::ShaderFile{"draw.glsl"}, .compile_options = {.defines = {daxa::ShaderDefine{"DRAW_VERT"}}}},
         .fragment_shader_info = {.source = daxa::ShaderFile{"draw.glsl"}, .compile_options = {.defines = {daxa::ShaderDefine{"DRAW_FRAG"}}}},
-        .color_attachments = {{.format = swapchain.get_format()}},
+        .color_attachments = {{ .format = this->swapchain.get_format() }},
         .depth_test = {
             .depth_attachment_format = daxa::Format::D24_UNORM_S8_UINT,
             .enable_depth_test = true,
@@ -337,8 +337,8 @@ struct App : AppWindow<App> {
                     if(chunks.find(chunk_pos) != chunks.end()) {
                         auto& chunk = chunks.at(chunk_pos);
 
-                        if(chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z] != BlockID::Air) {
-                            chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z] = BlockID::Air;
+                        if(chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z].id != BlockID::Air) {
+                            chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z].id = BlockID::Air;
 
                             Chunk::ChunkNeighbours neighbours {
                                 .nx = chunks.find(chunk_pos + glm::ivec3{ -1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ -1, 0, 0 }).get() : nullptr,
@@ -363,7 +363,7 @@ struct App : AppWindow<App> {
                     auto& chunk = chunks.at(chunk_pos);
                     std::cout << "place block" << std::endl;
 
-                    chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z] = BlockID::Sand;
+                    chunk->voxel_data[block_pos.x][block_pos.y][block_pos.z].id = BlockID::Sand;
 
                     Chunk::ChunkNeighbours neighbours {
                         .nx = chunks.find(chunk_pos + glm::ivec3{ -1, 0, 0 }) != chunks.end() ? chunks.at(chunk_pos + glm::ivec3{ -1, 0, 0 }).get() : nullptr,

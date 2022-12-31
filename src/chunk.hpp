@@ -78,7 +78,7 @@ struct Chunk {
         for(u32 x = 0; x < CHUNK_SIZE; x++) {
             for(u32 y = 0; y < CHUNK_SIZE; y++) {
                 for(u32 z = 0; z < CHUNK_SIZE; z++) {
-                    voxel_data[x][y][z] = BlockID::Air;
+                    voxel_data[x][y][z].id = BlockID::Air;
                 }
             }
         }
@@ -96,10 +96,10 @@ struct Chunk {
             for(u32 y = 0; y < CHUNK_SIZE; y++) {
                 for(u32 z = 0; z < CHUNK_SIZE; z++) {
                     if(noiseOutput[index++] <= 0.0f) {
-                        voxel_data[x][y][z] = BlockID::Stone;
+                        voxel_data[x][y][z].id = BlockID::Stone;
 
                     } else {
-                        voxel_data[x][y][z] = BlockID::Air;
+                        voxel_data[x][y][z].id = BlockID::Air;
                     }
                 }
             }
@@ -108,27 +108,27 @@ struct Chunk {
         for(u32 x = 0; x < CHUNK_SIZE; x++) {
             for(u32 z = 0; z < CHUNK_SIZE; z++) {
                 for(i32 y = CHUNK_SIZE-1; y >= 0; y--) {
-                    if (get_voxel(glm::ivec3{x, y, z}, { .py = upper_chunk }) == BlockID::Stone) {
+                    if (get_voxel(glm::ivec3{x, y, z}, { .py = upper_chunk }).id == BlockID::Stone) {
                         u32 above_i;
                         for (above_i = 0; above_i < 6; ++above_i) {
-                            if (get_voxel(glm::ivec3{x, y + above_i + 1, z}, { .py = upper_chunk }) == BlockID::Air)
+                            if (!get_voxel(glm::ivec3{x, y + above_i + 1, z}, { .py = upper_chunk }).is_occluding())
                                 break;
                         }
                         switch (rand() % 8)
                         {
-                        case 0: voxel_data[x][y][z] = BlockID::Gravel; break;
-                        case 1: voxel_data[x][y][z] = BlockID::Cobblestone; break;
+                        case 0: voxel_data[x][y][z].id = BlockID::Gravel; break;
+                        case 1: voxel_data[x][y][z].id = BlockID::Cobblestone; break;
                         default: break;
                         }
                         if (above_i == 0)
-                            voxel_data[x][y][z] = BlockID::Grass;
+                            voxel_data[x][y][z].id = BlockID::Grass;
                         else if (above_i < 4)
-                            voxel_data[x][y][z] = BlockID::Dirt;
-                    } else if (get_voxel(glm::ivec3{x, y, z}, { .py = upper_chunk }) == BlockID::Air) {
+                            voxel_data[x][y][z].id = BlockID::Dirt;
+                    } else if (!get_voxel(glm::ivec3{x, y, z}, { .py = upper_chunk }).is_occluding()) {
                         u32 below_i;
                         for (below_i = 0; below_i < 6; ++below_i)
                         {
-                            if (get_voxel(glm::ivec3{x, y - (below_i + 1), z}, { .py = upper_chunk }) == BlockID::Stone)
+                            if (get_voxel(glm::ivec3{x, y - (below_i + 1), z}, { .py = upper_chunk }).id == BlockID::Stone)
                                 break;
                         }
                         if (below_i == 0)
@@ -138,9 +138,9 @@ struct Chunk {
                             {
                                 switch (r)
                                 {
-                                case 0: voxel_data[x][y][z] = BlockID::Rose; break;
+                                case 0: voxel_data[x][y][z].id = BlockID::Rose; break;
                                 default:
-                                    voxel_data[x][y][z] = BlockID::TallGrass;
+                                    voxel_data[x][y][z].id = BlockID::TallGrass;
                                     break;
                                 }
                             }
@@ -164,33 +164,36 @@ struct Chunk {
         for(u32 x = 0; x < CHUNK_SIZE; x++) {
             for(u32 y = 0; y < CHUNK_SIZE; y++) {
                 for(u32 z = 0; z < CHUNK_SIZE; z++) {
-                    if(voxel_data[x][y][z] == BlockID::Air) { continue; }
-
                     glm::ivec3 voxel_pos = { x, y, z };
+                    if(voxel_data[x][y][z].is_occluding()) {
+                        if(!get_voxel(voxel_pos + glm::ivec3{ 0, 0, -1 }, neighbors).is_occluding()) {
+                            *buffer_ptr = BlockFace(voxel_pos, 5, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        }
 
+                        if(!get_voxel(voxel_pos + glm::ivec3{ 0, 0, +1 }, neighbors).is_occluding()) {
+                            *buffer_ptr = BlockFace(voxel_pos, 4, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        }
 
-                    if(get_voxel(voxel_pos + glm::ivec3{ 0, 0, -1 }, neighbors) == BlockID::Air) {
-                        *buffer_ptr = BlockFace(voxel_pos, 5, static_cast<u32>(voxel_data[x][y][z])), buffer_ptr++, chunk_size++;
-                    }
+                        if(!get_voxel(voxel_pos + glm::ivec3{ -1, 0, 0 }, neighbors).is_occluding()) {
+                            *buffer_ptr = BlockFace(voxel_pos, 1, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        }
 
-                    if(get_voxel(voxel_pos + glm::ivec3{ 0, 0, +1 }, neighbors) == BlockID::Air) {
-                        *buffer_ptr = BlockFace(voxel_pos, 4, static_cast<u32>(voxel_data[x][y][z])), buffer_ptr++, chunk_size++;
-                    }
+                        if(!get_voxel(voxel_pos + glm::ivec3{ +1, 0, 0 }, neighbors).is_occluding()) {
+                            *buffer_ptr = BlockFace(voxel_pos, 0, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        }
 
-                    if(get_voxel(voxel_pos + glm::ivec3{ -1, 0, 0 }, neighbors) == BlockID::Air) {
-                        *buffer_ptr = BlockFace(voxel_pos, 1, static_cast<u32>(voxel_data[x][y][z])), buffer_ptr++, chunk_size++;
-                    }
+                        if(!get_voxel(voxel_pos + glm::ivec3{ 0, -1, 0 }, neighbors).is_occluding()) {
+                            *buffer_ptr = BlockFace(voxel_pos, 3, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        }
 
-                    if(get_voxel(voxel_pos + glm::ivec3{ +1, 0, 0 }, neighbors) == BlockID::Air) {
-                        *buffer_ptr = BlockFace(voxel_pos, 0, static_cast<u32>(voxel_data[x][y][z])), buffer_ptr++, chunk_size++;
-                    }
-
-                    if(get_voxel(voxel_pos + glm::ivec3{ 0, -1, 0 }, neighbors) == BlockID::Air) {
-                        *buffer_ptr = BlockFace(voxel_pos, 3, static_cast<u32>(voxel_data[x][y][z])), buffer_ptr++, chunk_size++;
-                    }
-
-                    if(get_voxel(voxel_pos + glm::ivec3{ 0, +1, 0 }, neighbors) == BlockID::Air) {
-                        *buffer_ptr = BlockFace(voxel_pos, 2, static_cast<u32>(voxel_data[x][y][z])), buffer_ptr++, chunk_size++;
+                        if(!get_voxel(voxel_pos + glm::ivec3{ 0, +1, 0 }, neighbors).is_occluding()) {
+                            *buffer_ptr = BlockFace(voxel_pos, 2, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        }
+                    } else if(voxel_data[x][y][z].is_cross()) {
+                        *buffer_ptr = BlockFace(voxel_pos, 6, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        *buffer_ptr = BlockFace(voxel_pos, 6, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        *buffer_ptr = BlockFace(voxel_pos, 7, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
+                        *buffer_ptr = BlockFace(voxel_pos, 7, static_cast<u32>(voxel_data[x][y][z].id)), buffer_ptr++, chunk_size++;
                     }
                 }
             }
@@ -223,34 +226,34 @@ struct Chunk {
         }
     }
 
-    auto get_voxel(const glm::ivec3& p, const ChunkNeighbours& neighbours) -> BlockID {
+    auto get_voxel(const glm::ivec3& p, const ChunkNeighbours& neighbours) -> Block {
         if(p.x < 0) {
-            if(neighbours.nx == nullptr) { return BlockID::Air; }
+            if(neighbours.nx == nullptr) { return Block{.id = BlockID::Air}; }
             return neighbours.nx->voxel_data[CHUNK_SIZE+p.x][p.y][p.z];
         }
 
         if(p.x >= CHUNK_SIZE) {
-            if(neighbours.px == nullptr) { return BlockID::Air; }
+            if(neighbours.px == nullptr) { return Block{.id = BlockID::Air}; }
             return neighbours.px->voxel_data[CHUNK_SIZE-p.x][p.y][p.z];
         }
 
         if(p.y < 0) {
-            if(neighbours.ny == nullptr) { return BlockID::Air; }
+            if(neighbours.ny == nullptr) { return Block{.id = BlockID::Air}; }
             return neighbours.ny->voxel_data[p.x][CHUNK_SIZE+p.y][p.z];
         }
 
         if(p.y >= CHUNK_SIZE) {
-            if(neighbours.py == nullptr) { return BlockID::Air; }
+            if(neighbours.py == nullptr) { return Block{.id = BlockID::Air}; }
             return neighbours.py->voxel_data[p.x][CHUNK_SIZE-p.y][p.z];
         }
 
         if(p.z < 0) {
-            if(neighbours.nz == nullptr) { return BlockID::Air; }
+            if(neighbours.nz == nullptr) { return Block{.id = BlockID::Air}; }
             return neighbours.nz->voxel_data[p.x][p.y][CHUNK_SIZE+p.z];
         }
 
         if(p.z >= CHUNK_SIZE) {
-            if(neighbours.pz == nullptr) { return BlockID::Air; }
+            if(neighbours.pz == nullptr) { return Block{.id = BlockID::Air}; }
             return neighbours.pz->voxel_data[p.x][p.y][CHUNK_SIZE-p.z];
         }
 
@@ -261,46 +264,46 @@ struct Chunk {
         if(p.x < 0) {
             if(neighbours.nx == nullptr) { return; }
             std::cout << "nx "  << p.x << std::endl;
-            neighbours.nx->voxel_data[CHUNK_SIZE+p.x][p.y][p.z] = block_id;
+            neighbours.nx->voxel_data[CHUNK_SIZE+p.x][p.y][p.z].id = block_id;
             return;
         }
 
         if(p.x >= CHUNK_SIZE) {
             if(neighbours.px == nullptr) { return; }
             std::cout << "px "  << p.x << std::endl;
-            neighbours.px->voxel_data[CHUNK_SIZE-p.x][p.y][p.z] = block_id;
+            neighbours.px->voxel_data[CHUNK_SIZE-p.x][p.y][p.z].id = block_id;
             return;
         }
 
         if(p.y < 0) {
             if(neighbours.ny == nullptr) { return; }
             std::cout << "ny " << p.y << std::endl;
-            neighbours.ny->voxel_data[p.x][CHUNK_SIZE+p.y][p.z] = block_id;
+            neighbours.ny->voxel_data[p.x][CHUNK_SIZE+p.y][p.z].id = block_id;
             return;
         }
 
         if(p.y >= CHUNK_SIZE) {
             if(neighbours.py == nullptr) { return; }
             std::cout << "py "  << p.y << std::endl;
-            neighbours.py->voxel_data[p.x][CHUNK_SIZE-p.y][p.z] = block_id;
+            neighbours.py->voxel_data[p.x][CHUNK_SIZE-p.y][p.z].id = block_id;
             return;
         }
 
         if(p.z < 0) {
             if(neighbours.nz == nullptr) { return; }
             std::cout << "nz "  << p.z << std::endl;
-            neighbours.nz->voxel_data[p.x][p.y][CHUNK_SIZE+p.z] = block_id;
+            neighbours.nz->voxel_data[p.x][p.y][CHUNK_SIZE+p.z].id = block_id;
             return;
         }
 
         if(p.z >= CHUNK_SIZE) {
             if(neighbours.pz == nullptr) { return; }
             std::cout << "pz "  << p.z << std::endl;
-            neighbours.pz->voxel_data[p.x][p.y][CHUNK_SIZE-p.z] = block_id;
+            neighbours.pz->voxel_data[p.x][p.y][CHUNK_SIZE-p.z].id = block_id;
             return;
         }
 
-        voxel_data[p.x][p.y][p.z] = block_id;
+        voxel_data[p.x][p.y][p.z].id = block_id;
     }
 
     daxa::BufferId face_buffer;
@@ -308,5 +311,5 @@ struct Chunk {
     glm::ivec3 pos;
     bool renderable = false;
     u32 chunk_size = 0;
-    std::array<std::array<std::array<BlockID, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> voxel_data;
+    std::array<std::array<std::array<Block, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> voxel_data;
 };
